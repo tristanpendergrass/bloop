@@ -273,8 +273,7 @@ view model =
             div []
                 [ div [] [ text "Oxygen: ", strong [] [ text (String.fromInt game.oxygen) ] ]
                 , div [] [ text "Weight: ", strong [] [ text (String.fromInt (List.length game.treasure)) ] ]
-                , h2 [] [ text "Treasure:" ]
-                , ul [] (List.map (\treasure -> li [] [ renderTreasure treasure ]) game.treasure)
+                , div [ class "flex flex-row gap-2" ] (text "Inventory: " :: List.map renderTreasure game.treasure)
                 , div [ class "divider" ] []
                 , div [ class "flex items-center gap-4" ]
                     [ button [ class "btn btn-sm btn-primary", onClick HandleRollPress ] [ text "Roll" ]
