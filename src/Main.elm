@@ -253,7 +253,52 @@ view : Model -> Html Msg
 view model =
     case model.game of
         Nothing ->
-            div [] [ button [ class "btn", onClick HandleStartGamePress ] [ text "Start Game" ] ]
+            let
+                renderOutcome outcome =
+                    case outcome of
+                        Survived { treasure } ->
+                            let
+                                score =
+                                    List.sum (List.map (\(Treasure v) -> v) treasure)
+                            in
+                            div []
+                                [ span [ class "font-bold text-green-700" ] [ text ("Survived! Score: " ++ String.fromInt score) ]
+                                ]
+
+                        Drowned treasure ->
+                            let
+                                score =
+                                    List.sum (List.map (\(Treasure v) -> v) treasure)
+                            in
+                            div []
+                                [ span [ class "text-red-500" ] [ text ("Drowned. Score: " ++ String.fromInt score) ]
+                                ]
+            in
+            div []
+                [ button [ class "btn", onClick HandleStartGamePress ] [ text "Start Game" ]
+                , case model.prevGames of
+                    [] ->
+                        text ""
+
+                    first :: rest ->
+                        div [ class "mt-6" ]
+                            [ h2 [ class "text-xl font-bold bg-blue-100 p-4" ] [ text "Game Result" ]
+                            , div [ class "bg-blue-100 p-4" ] [ renderOutcome first ]
+                            , if List.isEmpty rest then
+                                text ""
+
+                              else
+                                div [ class "divider my-4" ] []
+                            , if List.isEmpty rest then
+                                text ""
+
+                              else
+                                div []
+                                    [ h3 [ class "text-lg font-semibold mb-2" ] [ text "Previous Games" ]
+                                    , div [] (List.map renderOutcome rest)
+                                    ]
+                            ]
+                ]
 
         Just game ->
             let
