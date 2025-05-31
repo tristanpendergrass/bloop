@@ -57,11 +57,6 @@ type GameOutcome
     | Survived { treasure : List Treasure }
 
 
-type MoveResult
-    = GameContinues Game
-    | GameOver GameOutcome
-
-
 init : () -> ( Model, Cmd Msg )
 init _ =
     ( { game = Nothing, prevGames = [] }, Cmd.none )
@@ -78,6 +73,7 @@ type Msg
     | HandleTurnAroundPress
     | HandleRollPress
     | HandleRollResult Int
+    | HandlePickUpPress
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -129,6 +125,42 @@ update msg model =
 
                     else
                         ( { model | game = Just { game | prevRoll = Just roll, playerLocation = newLocation, oxygen = newOxygen } }, Cmd.none )
+
+        HandlePickUpPress ->
+            case model.game of
+                Nothing ->
+                    ( model, Cmd.none )
+
+                Just game ->
+                    case game.playerLocation of
+                        Submarine ->
+                            ( model, Cmd.none )
+
+                        Water idx ->
+                            case List.drop idx game.tiles |> List.head of
+                                Just (TreasureTile treasure) ->
+                                    let
+                                        newTiles =
+                                            List.indexedMap
+                                                (\i t ->
+                                                    if i == idx then
+                                                        EmptyTile
+
+                                                    else
+                                                        t
+                                                )
+                                                game.tiles
+
+                                        newTreasure =
+                                            treasure :: game.treasure
+
+                                        newGame =
+                                            { game | tiles = newTiles, treasure = newTreasure }
+                                    in
+                                    ( { model | game = Just newGame }, Cmd.none )
+
+                                _ ->
+                                    ( model, Cmd.none )
 
 
 adjustForDirection : Game -> Int -> Int
@@ -224,6 +256,20 @@ view model =
             div [] [ button [ class "btn", onClick HandleStartGamePress ] [ text "Start Game" ] ]
 
         Just game ->
+            let
+                ( onTreasureTile, onSubmarine ) =
+                    case game.playerLocation of
+                        Submarine ->
+                            ( False, True )
+
+                        Water idx ->
+                            case List.drop idx game.tiles |> List.head of
+                                Just (TreasureTile _) ->
+                                    ( True, False )
+
+                                _ ->
+                                    ( False, False )
+            in
             div []
                 [ div [] [ text "Oxygen: ", strong [] [ text (String.fromInt game.oxygen) ] ]
                 , div [] [ text "Weight: ", strong [] [ text (String.fromInt (List.length game.treasure)) ] ]
@@ -233,6 +279,7 @@ view model =
                 , div [ class "flex items-center gap-4" ]
                     [ button [ class "btn btn-sm btn-primary", onClick HandleRollPress ] [ text "Roll" ]
                     , button [ class "btn btn-sm btn-secondary", onClick HandleTurnAroundPress, disabled (game.playerDirection == Up) ] [ text "Go back up" ]
+                    , button [ class "btn btn-sm btn-accent", onClick HandlePickUpPress, disabled (onSubmarine || not onTreasureTile) ] [ text "Pick Up" ]
                     , case game.prevRoll of
                         Nothing ->
                             text ""
